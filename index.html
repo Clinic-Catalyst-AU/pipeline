@@ -934,7 +934,7 @@ if (!window.supabase) {
   document.getElementById('loadingScreen').innerHTML = '<p style="color:#E8A87C;font-family:Montserrat,sans-serif;">Supabase library failed to load. Check internet connection.</p>';
   throw new Error('Supabase CDN not loaded');
 }
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const STAGES = [
   { key: 'lead', label: 'Lead', color: '#00B4A0' },
@@ -959,7 +959,7 @@ let draggedCard = null;
 async function loadProspects() {
   try {
     console.log('Loading prospects...');
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('cc_pipeline')
       .select('*')
       .order('created_at', { ascending: false });
@@ -980,7 +980,7 @@ async function loadProspects() {
 }
 
 function setupRealtime() {
-  supabase
+  db
     .channel('cc_pipeline_changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'cc_pipeline' }, (payload) => {
       if (payload.eventType === 'INSERT') {
@@ -1074,7 +1074,7 @@ function renderBoard() {
         // Persist
         const updateData = { stage: newStage, updated_at: new Date().toISOString() };
         if (newStage === 'signed') updateData.signed_at = new Date().toISOString();
-        const { error } = await supabase
+        const { error } = await db
           .from('cc_pipeline')
           .update(updateData)
           .eq('id', prospectId);
@@ -1417,7 +1417,7 @@ async function saveProspect() {
     updateData.signed_at = new Date().toISOString();
   }
 
-  const { error } = await supabase
+  const { error } = await db
     .from('cc_pipeline')
     .update(updateData)
     .eq('id', currentProspect.id);
@@ -1451,7 +1451,7 @@ async function addNote() {
   };
   existingNotes.push(newNote);
 
-  const { error } = await supabase
+  const { error } = await db
     .from('cc_pipeline')
     .update({ notes: existingNotes, updated_at: new Date().toISOString() })
     .eq('id', currentProspect.id);
@@ -1496,7 +1496,7 @@ async function confirmLost() {
     updated_at: new Date().toISOString()
   };
 
-  const { error } = await supabase
+  const { error } = await db
     .from('cc_pipeline')
     .update(updateData)
     .eq('id', currentProspect.id);
@@ -1556,7 +1556,7 @@ async function addProspect() {
     notes: [],
   };
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('cc_pipeline')
     .insert([newRow])
     .select();
