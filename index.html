@@ -924,11 +924,16 @@ body {
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // ========== CONFIG ==========
 const SUPABASE_URL = 'https://jiquevvzrdavgqonvvug.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppcXVldnZ6cmRhdmdxb252dnVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE5NzIxNzIsImV4cCI6MjA4NzU0ODE3Mn0.e4mYjXj8TGTC0_UCm3QCKGSv8Cl-migIl7reYIKNcW4';
+
+if (!window.supabase) {
+  document.getElementById('loadingScreen').innerHTML = '<p style="color:#E8A87C;font-family:Montserrat,sans-serif;">Supabase library failed to load. Check internet connection.</p>';
+  throw new Error('Supabase CDN not loaded');
+}
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const STAGES = [
@@ -952,18 +957,26 @@ let draggedCard = null;
 
 // ========== DATA ==========
 async function loadProspects() {
-  const { data, error } = await supabase
-    .from('cc_pipeline')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) {
-    showToast('Error loading data: ' + error.message, true);
-    return;
+  try {
+    console.log('Loading prospects...');
+    const { data, error } = await supabase
+      .from('cc_pipeline')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Supabase error:', error);
+      document.getElementById('loadingScreen').innerHTML = '<p style="color:#E8A87C;font-family:Montserrat,sans-serif;">Error: ' + error.message + '</p>';
+      return;
+    }
+    console.log('Loaded', data ? data.length : 0, 'prospects');
+    prospects = data || [];
+    renderBoard();
+    renderStats();
+    document.getElementById('loadingScreen').classList.add('hidden');
+  } catch (e) {
+    console.error('Load failed:', e);
+    document.getElementById('loadingScreen').innerHTML = '<p style="color:#E8A87C;font-family:Montserrat,sans-serif;">Load failed: ' + e.message + '</p>';
   }
-  prospects = data || [];
-  renderBoard();
-  renderStats();
-  document.getElementById('loadingScreen').classList.add('hidden');
 }
 
 function setupRealtime() {
